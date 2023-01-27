@@ -1,0 +1,54 @@
+version: "3.8"
+
+services:
+    backend:
+        build:
+            context: ./kitchen_backend
+            dockerfile: Dockerfile.prod
+        container_name: backend_container
+        command: gunicorn backend_app.wsgi:application --bind 0.0.0.0:8000 --timeout 20 --preload --max-requests-jitter 10 --workers 6
+        volumes:
+            - ./kitchen_backend/static:/home/app/web/static
+            - ./kitchen_backend/media:/home/app/web/media
+        expose:
+            - 8000
+        env_file:
+            - ./.env.prod
+        depends_on:
+            - db
+    db:
+        image: postgres:13.0-alpine
+        volumes:
+            - postgres_data:/var/lib/postgresql/data/
+        env_file:
+            - ./.env.prod.db
+    frontend:
+        build:
+            context: ./kitchen_site
+            dockerfile: Dockerfile.prod
+        container_name: frontend_container
+        stdin_open: true
+        expose:
+            - 3000
+        volumes:
+            - react_built:/app/build
+    nginx:
+        image: nginx:latest
+        restart: always
+        volumes:
+            - ./kitchen_backend/static:/home/app/web/static
+            - ./kitchen_backend/media:/home/app/web/media
+            - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+            - react_built:/var/www/react
+        ports:
+            - 81:81
+            - 80:80
+        depends_on:
+            - backend
+            - frontend
+
+volumes:
+    postgres_data:
+    # static_volume:
+    # media_volume:
+    react_built:
