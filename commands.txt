@@ -6,3 +6,5 @@ docker-compose -f docker-compose.prod.yml exec backend python manage.py collects
 
 docker ps
 docker exec -it container_id python manage.py createsuperuser
+
+
